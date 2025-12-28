@@ -15,3 +15,10 @@ yarn-error.log*
 # OS/editor junk
 .DS_Store
 .vscode/
+
+# outputs
+outputs/
+
+# generated files
+scripts/gen-readme.mjs
+'@ | Set-Content -Encoding UTF8 .gitignore

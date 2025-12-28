@@ -9,7 +9,11 @@
   "scripts": {
     "dev": "tsx src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "smoke": "powershell -ExecutionPolicy Bypass -File .\\scripts\\smoke-tests.ps1",
+    "smoke:quick": "powershell -ExecutionPolicy Bypass -File .\\scripts\\smoke-tests.ps1 -Quick"
   },
   "dependencies": {
     "chalk": "^5.4.1",
@@ -19,8 +23,9 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/node": "^22.10.7",
+    "@types/node": "^22.19.3",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vitest": "^4.0.16"
   }
 }
