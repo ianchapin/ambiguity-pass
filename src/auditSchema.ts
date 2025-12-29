@@ -2,10 +2,9 @@
 import { z } from "zod";
 
 /**
- * NOTE: This schema is Structured Outputs–friendly:
+ * Structured Outputs–friendly schema:
  * - No .optional()
- * - No partial objects
- * - "Missing" values are represented as empty strings or empty arrays
+ * - "Missing" values represented as empty strings / empty arrays
  */
 
 export const AmbiguityType = z.enum([
@@ -16,14 +15,16 @@ export const AmbiguityType = z.enum([
   "normative",
 ]);
 
+export const AmbiguityPriority = z.enum(["primary", "secondary"]);
+
 export const IntendedUse = z.enum([
   "exploration",
   "explanation",
   "decision_support",
   "justification",
+  "unknown",
 ]);
 
-// Newer framework tiers (from your updated CLI flags / output)
 export const UseTier = z.enum([
   "exploratory",
   "explanatory",
@@ -31,16 +32,13 @@ export const UseTier = z.enum([
   "high_stakes",
 ]);
 
-// Decision-context axes (your CLI flags)
 export const Stakes = z.enum(["low", "medium", "high", "unknown"]);
 export const Reversibility = z.enum(["low", "medium", "high", "unknown"]);
 export const Detectability = z.enum(["easy", "moderate", "hard", "unknown"]);
 export const TimePressure = z.enum(["low", "medium", "high", "unknown"]);
 
-// Reliance calibration
 export const RelianceLevel = z.enum(["very_low", "low", "medium", "high"]);
 
-// Permission / dominance cap for reliance (matches your protocol doc)
 export const RelianceCap = z.enum([
   "input_only",
   "supporting",
@@ -56,8 +54,12 @@ export const AuditSchema = z.object({
   }),
 
   intended_use: z.object({
-    primary: IntendedUse,
-    tier: UseTier,
+    attempted_use: IntendedUse,
+    earned_tier: UseTier,
+
+    mismatch: z.boolean(),
+    mismatch_reason: z.string(), // "" if none
+
     notes: z.string(), // "" if none
     alternatives: z.array(IntendedUse), // [] if none
   }),
@@ -72,14 +74,15 @@ export const AuditSchema = z.object({
   }),
 
   scope: z.object({
-    within: z.array(z.string()), // [] if none
-    outside: z.array(z.string()), // [] if none
+    within: z.array(z.string()), // [] if none (but we’ll enforce non-empty post-parse)
+    outside: z.array(z.string()), // [] if none (but we’ll enforce non-empty post-parse)
     assumptions: z.array(z.string()), // [] if none
   }),
 
   ambiguities: z.array(
     z.object({
       type: AmbiguityType,
+      priority: AmbiguityPriority,
       description: z.string(),
       why_it_matters: z.string(),
       signals: z.array(z.string()), // [] if none
@@ -114,10 +117,11 @@ export const AuditSchema = z.object({
   }),
 
   meta: z.object({
-    generated_at_iso: z.string(), // filled by us
-    model: z.string(), // filled by us
-    warnings: z.array(z.string()), // [] default
-    schema_version: z.string(), // e.g. "2"
+    generated_at_iso: z.string(),
+    model: z.string(),
+    warnings: z.array(z.string()),
+    gates_applied: z.array(z.string()),
+    schema_version: z.string(), // e.g. "3"
   }),
 });
 

@@ -111,6 +111,7 @@ $cases += @{
   args = @(
     "KPI: Daily Active Users (DAU) increased 12% week-over-week.",
     "--context", "Leadership wants to use this as proof the redesign worked",
+    "--use", "justification",
     "--stakes", "medium",
     "--reversibility", "medium",
     "--detectability", "moderate",
@@ -120,6 +121,7 @@ $cases += @{
     "--alt", "Support tickets volume"
   )
 }
+
 
 # 3) Exploratory analysis reused for decision (scope creep)
 $cases += @{

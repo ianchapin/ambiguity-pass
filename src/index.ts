@@ -13,32 +13,19 @@ const program = new Command();
 
 program
   .name("ambiguity-pass")
-  .description(
-    "Run an Ambiguity Pass audit on a representation (local CLI tool)."
-  )
+  .description("Run an Ambiguity Pass audit on a representation (local CLI tool).")
   .argument("[text...]", "representation text (or pipe via stdin)")
   .option("-f, --file <path>", "read representation from a file")
   .option("-c, --context <text>", "context: what decision/use is this for?")
   .option(
-    "-s, --stakes <low|medium|high|unknown>",
-    "stakes (default: medium)",
-    "medium"
-  )
-  .option(
-    "--reversibility <high|medium|low|unknown>",
-    "reversibility (default: unknown)",
+    "--use <exploration|explanation|decision_support|justification|unknown>",
+    "attempted use (what someone wants to do with it)",
     "unknown"
   )
-  .option(
-    "--detectability <easy|moderate|hard|unknown>",
-    "detectability (default: unknown)",
-    "unknown"
-  )
-  .option(
-    "--time-pressure <low|medium|high|unknown>",
-    "time pressure (default: unknown)",
-    "unknown"
-  )
+  .option("-s, --stakes <low|medium|high|unknown>", "stakes (default: medium)", "medium")
+  .option("--reversibility <high|medium|low|unknown>", "reversibility (default: unknown)", "unknown")
+  .option("--detectability <easy|moderate|hard|unknown>", "detectability (default: unknown)", "unknown")
+  .option("--time-pressure <low|medium|high|unknown>", "time pressure (default: unknown)", "unknown")
   .option(
     "-a, --alt <text>",
     "alternative check/source available (repeatable)",
@@ -55,11 +42,7 @@ program
     "--self",
     "self-audit: run Ambiguity Pass on the output itself (critique for overreach)"
   )
-  // NEW: output-to-file
-  .option(
-    "-o, --out <path>",
-    "write output to a text file (same content as stdout)"
-  )
+  .option("-o, --out <path>", "write output to a text file (same content as stdout)")
   .option("--append", "append to --out instead of overwriting")
   .option("--quiet", "do not print to stdout (useful with --out)")
   .parse(process.argv);
@@ -67,6 +50,7 @@ program
 type Opts = {
   file?: string;
   context?: string;
+  use: string;
 
   stakes: string;
   reversibility: string;
@@ -85,11 +69,7 @@ type Opts = {
   quiet?: boolean;
 };
 
-async function writeOutputFile(
-  filePath: string,
-  content: string,
-  append: boolean
-) {
+async function writeOutputFile(filePath: string, content: string, append: boolean) {
   const dir = path.dirname(filePath);
   await fs.mkdir(dir, { recursive: true });
 
@@ -98,11 +78,8 @@ async function writeOutputFile(
     ? `\n\n===== ambiguity-pass @ ${stamp} =====\n${content}\n`
     : content + (content.endsWith("\n") ? "" : "\n");
 
-  if (append) {
-    await fs.appendFile(filePath, payload, "utf8");
-  } else {
-    await fs.writeFile(filePath, payload, "utf8");
-  }
+  if (append) await fs.appendFile(filePath, payload, "utf8");
+  else await fs.writeFile(filePath, payload, "utf8");
 }
 
 async function main() {
@@ -126,6 +103,7 @@ async function main() {
   const audit = await runAmbiguityPass({
     representation,
     context: opts.context ?? "",
+    attemptedUse: opts.use ?? "unknown",
     decisionContext,
     model: opts.model,
     selfAudit: false,
@@ -139,28 +117,19 @@ async function main() {
     finalAudit = await runAmbiguityPass({
       representation: JSON.stringify(audit, null, 2),
       context: selfContext,
+      attemptedUse: "unknown",
       decisionContext,
       model: opts.model,
       selfAudit: true,
     });
   }
 
-  // Decide what to print/write
   const content = opts.json
     ? JSON.stringify(finalAudit, null, 2) + "\n"
-    : (opts.technical
-        ? renderTechnical(finalAudit)
-        : renderFriendly(finalAudit)) + "\n";
+    : (opts.technical ? renderTechnical(finalAudit) : renderFriendly(finalAudit)) + "\n";
 
-  // Write to file if requested
-  if (opts.out) {
-    await writeOutputFile(opts.out, content, Boolean(opts.append));
-  }
-
-  // Print unless quiet
-  if (!opts.quiet) {
-    process.stdout.write(content);
-  }
+  if (opts.out) await writeOutputFile(opts.out, content, Boolean(opts.append));
+  if (!opts.quiet) process.stdout.write(content);
 }
 
 main().catch((err: any) => {
